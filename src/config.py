@@ -1,0 +1,6 @@
+CSV_PATH = "../dataset/Data_Entry_2017.csv"
+
+IMAGE_SIZE = 224
+NUM_CLASSES = 14
+BATCH_SIZE = 32
+EPOCHS = 10
