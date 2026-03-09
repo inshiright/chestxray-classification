@@ -8,7 +8,7 @@ This project compares Generic CV Models (ImageNet-based) and Domain-Specific Fou
 <!-- Run `cuda_check.py` under the `scripts` folder to ensure CUDA is available. -->
 > Note: The python launcher utility differs from device to device. if `python` does not work, try using `py` or `py3`. Example: `py3 scripts/cuda_check.py`
 
-## Downloading Dependencies
+## Downloading Dependencies:
 Open a terminal from the root folder and run `python -m pip install -r requirements.txt`.
 > Note: The python launcher utility differs from device to device. if `python` does not work, try using `py` or `py3`. Example: `py3 -m pip install -r requirements.txt`
 
