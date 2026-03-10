@@ -12,6 +12,7 @@ for p in (root_path, src_path):
 import torch
 import pandas as pd
 from torch.utils.data import DataLoader
+import matplotlib.pyplot as plt
 
 from build_path_map import build_dataframe_with_paths
 from dataset_loader import NIHDataset
@@ -35,6 +36,13 @@ model = get_model().to(device)
 criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
+# List to store loss values for visualization
+epoch_losses = []
+
+# Directory to save model checkpoints
+checkpoint_dir = os.path.join(root_path, "checkpoints")
+os.makedirs(checkpoint_dir, exist_ok=True)
+
 for epoch in range(EPOCHS):
     train_loss = train_one_epoch(
         model,
@@ -43,5 +51,26 @@ for epoch in range(EPOCHS):
         criterion,
         device
     )
-
+    
+    # Store the loss for this epoch
+    epoch_losses.append(train_loss)
     print(f"Epoch {epoch+1} Train Loss: {train_loss}")
+    
+    # Save checkpoint
+    checkpoint_path = os.path.join(checkpoint_dir, f"{MODEL_NAME}_epoch_{epoch+1}.pth")
+    torch.save(model.state_dict(), checkpoint_path)
+    print(f"Saved model checkpoint to {checkpoint_path}")
+
+# --- Visualization Code ---
+plt.figure(figsize=(10, 5))
+plt.plot(range(1, EPOCHS + 1), epoch_losses, marker='o', linestyle='-', color='b', label='Training Loss')
+plt.title(f'Training Loss per Epoch ({MODEL_NAME})')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.xticks(range(1, EPOCHS + 1))
+plt.grid(True)
+plt.legend()
+
+# Save the plot as an image and display it
+plt.savefig(f'training_loss_curve_{MODEL_NAME}.png')
+plt.show()
