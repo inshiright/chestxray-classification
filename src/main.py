@@ -36,7 +36,12 @@ val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=4, pin_m
 model = get_model().to(device)
 
 criterion = torch.nn.BCEWithLogitsLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+
+# Switched to AdamW for better regularization and stability
+optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
+
+# Added ReduceLROnPlateau scheduler (halves the LR if val_loss doesn't improve for 2 epochs)
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=2)
 
 # --- Early Stopping and Checkpoint Variables ---
 start_epoch = 0
@@ -46,14 +51,11 @@ best_val_loss = float('inf')
 patience_counter = 0
 EARLY_STOPPING_PATIENCE = 5  # Stop after 5 epochs with no improvement
 
-# Directory to save model checkpoints
-checkpoint_dir = os.path.join(root_path, "checkpoints")
-os.makedirs(checkpoint_dir, exist_ok=True)
-best_model_path = os.path.join(checkpoint_dir, f"{MODEL_NAME}_best_model.pth")
+# Use CHECKPOINT_DIR from config.py
+os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+best_model_path = os.path.join(CHECKPOINT_DIR, f"{MODEL_NAME}_best_model.pth")
 
-# --- Resume Training from Checkpoint ---
-# To resume, set this to the path of the 'latest_checkpoint.pth' file.
-RESUME_CHECKPOINT_PATH = None 
+# --- Resume Training from Checkpoint using config variable ---
 if RESUME_CHECKPOINT_PATH and os.path.exists(RESUME_CHECKPOINT_PATH):
     print(f"Resuming training from checkpoint: {RESUME_CHECKPOINT_PATH}")
     checkpoint = torch.load(RESUME_CHECKPOINT_PATH, map_location=device)
@@ -63,6 +65,10 @@ if RESUME_CHECKPOINT_PATH and os.path.exists(RESUME_CHECKPOINT_PATH):
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         
+        # Restore scheduler state if it exists
+        if 'scheduler_state_dict' in checkpoint:
+            scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+            
         start_epoch = checkpoint.get('epoch', 0) + 1 # Start from the next epoch
         best_val_loss = checkpoint.get('best_val_loss', float('inf'))
         
@@ -88,8 +94,14 @@ for epoch in range(start_epoch, EPOCHS):
         model, val_loader, criterion, device
     )
     
+    # Step the scheduler based on the validation loss
+    scheduler.step(val_loss)
+    
+    # Retrieve current learning rate to monitor scheduler steps
+    current_lr = optimizer.param_groups[0]['lr']
+    
     print(
-        f"Epoch {epoch+1}/{EPOCHS} | "
+        f"Epoch {epoch+1}/{EPOCHS} | LR: {current_lr:.6f} | "
         f"Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | "
         f"Val Loss: {val_loss:.4f} | Val Acc: {val_acc:.4f}"
     )
@@ -100,12 +112,13 @@ for epoch in range(start_epoch, EPOCHS):
     epoch_val_accuracies.append(val_acc)
 
     # --- Checkpoint and Early Stopping Logic ---
-    # Save the latest state of the training for resumption
-    latest_checkpoint_path = os.path.join(checkpoint_dir, "latest_checkpoint.pth")
+    # Save the latest state of the training for resumption, including the scheduler
+    latest_checkpoint_path = os.path.join(CHECKPOINT_DIR, "latest_checkpoint.pth")
     torch.save({
         'epoch': epoch,
         'model_state_dict': model.state_dict(),
         'optimizer_state_dict': optimizer.state_dict(),
+        'scheduler_state_dict': scheduler.state_dict(),
         'best_val_loss': best_val_loss,
         'train_losses': epoch_train_losses,
         'val_losses': epoch_val_losses,
