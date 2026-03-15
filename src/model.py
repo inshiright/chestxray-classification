@@ -1,7 +1,7 @@
 from models.generic_cv.EfficientNetV2_S.model import EfficientNetV2
 # from models.generic_cv.ConvNeXt-V2.model import ConvNeXtV2
 # from models.generic_cv.Swin_Transformer.model import SwinTransformer
-from models.medical_sota.Radjepa.model import RadJEPA
+from models.medical_sota.RadJEPA.model import RadJEPA
 from config import NUM_CLASSES, MODEL_NAME
 
 def get_model():
