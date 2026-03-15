@@ -30,8 +30,8 @@ train_df, val_df, test_df = split_data(df)
 train_dataset = NIHDataset(train_df)
 val_dataset = NIHDataset(val_df)
 
-train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0, pin_memory=True)
-val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=0, pin_memory=True)
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4, pin_memory=True, prefetch_factor=2)
+val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=4, pin_memory=True, prefetch_factor=2)
 
 model = get_model().to(device)
 
