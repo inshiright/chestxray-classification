@@ -208,3 +208,6 @@ __marimo__/
 
 # Dataset
 dataset/
+
+# Ignore .pth files
+*.pth

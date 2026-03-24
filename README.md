@@ -30,8 +30,13 @@ Open a terminal from the root folder and run `python scripts/download_dataset.py
 The dataset will be downloaded automatically.  
 > Note: The python launcher utility differs from device to device. if `python` does not work, try using `py` or `py3`. Example: `py3 scripts/download_dataset.py`
 
+<!-- ## Downloading Trained Weights
+1.  -->
 
-## Google Colab Setup (Cloud)
+
+
+
+<!-- ## Google Colab Setup (Cloud)
 
 For Colab, we persist the `.zip` file in Google Drive to avoid re-downloading, but extract it to the local `/content/` SSD for high-speed training.
 
@@ -91,4 +96,5 @@ os.remove("/content/data_local.zip")
 
 print(f"Done! {len(os.listdir(DESTINATION_DIR))} images ready at {DESTINATION_DIR}")
 
-```
+``` -->
+

@@ -1,8 +1,8 @@
 from models.generic_cv.EfficientNetV2_S.model import EfficientNetV2
-# from models.generic_cv.ConvNeXt-V2.model import ConvNeXtV2
-# from models.generic_cv.Swin_Transformer.model import SwinTransformer
-from models.medical_sota.RadDINO.model import RadDINO
+from models.generic_cv.ConvNeXt_V2.model import ConvNeXtV2
+from models.generic_cv.Swin_Transformer.model import SwinTransformer
 from models.medical_sota.RadJEPA.model import RadJEPA
+from models.medical_sota.RadDINO.model import RadDINO
 from config import NUM_CLASSES, MODEL_NAME
 
 def get_model():
@@ -20,6 +20,9 @@ def get_model():
     
     elif MODEL_NAME == "radjepa":
         return RadJEPA(NUM_CLASSES)
+
+    elif MODEL_NAME == "raddino":
+        return RadDINO(NUM_CLASSES)
 
     else:
         raise ValueError("Unknown model")
