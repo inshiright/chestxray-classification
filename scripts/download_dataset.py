@@ -19,8 +19,13 @@ zip_path = os.path.join(DATA_DIR, "data.zip")
 
 with zipfile.ZipFile(zip_path, 'r') as zip_ref:
     members = zip_ref.namelist()
+
     for member in tqdm(members, desc="Extracting", unit="file"):
-        zip_ref.extract(member, DATA_DIR)
+        target_path = os.path.join(DATA_DIR, member)
+        
+        # Only extract if the file is missing
+        if not os.path.exists(target_path):
+            zip_ref.extract(member, DATA_DIR)
 
 # Uncomment the following line if you want to remove the zip file after extraction
 # os.remove(zip_path)
