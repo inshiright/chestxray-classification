@@ -10,4 +10,4 @@ BATCH_SIZE = 8  # if OOM on laptop GPU, lower this value (e.g. 8 or 4).
 EPOCHS = 10
 LR = 1e-4
 
-MODEL_NAME = "efficientnet"
+MODEL_NAME = "swin"
