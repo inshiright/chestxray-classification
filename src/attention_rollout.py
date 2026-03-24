@@ -1,9 +1,18 @@
 import os
+import sys
 import cv2
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
 from torchvision import transforms
+
+# Adds 'chestxray-classification' (repo root) and 'chestxray-classification/src' to the system path
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+src_path = os.path.join(root_path, 'src')
+for p in (root_path, src_path):
+    if p not in sys.path:
+        sys.path.insert(0, p)
+
 from model import get_model
 from config import IMAGE_SIZE, CHECKPOINT_DIR
 
