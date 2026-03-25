@@ -7,7 +7,11 @@ class RadDINO(nn.Module):
         super(RadDINO, self).__init__()
         
         # Load Microsoft's Rad-DINO chest X-ray foundation model
-        self.encoder = AutoModel.from_pretrained("microsoft/rad-dino")
+        # ADDED: attn_implementation="eager" to force it to save attention weights for heatmaps
+        self.encoder = AutoModel.from_pretrained(
+            "microsoft/rad-dino",
+            attn_implementation="eager"
+        )
         
         # Rad-DINO uses a ViT-Base backbone, which outputs a 768-dimensional feature vector
         hidden_dim = 768 

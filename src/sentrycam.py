@@ -1,68 +1,89 @@
-import cv2
+import os
 import torch
 import numpy as np
-from torchvision import transforms
-from model import get_model
-from config import IMAGE_SIZE, MODEL_NAME
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
 
-def run_sentrycam_colab(video_path, model_weights_path, output_path="sentrycam_output.mp4"):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = get_model()
-    model.load_state_dict(torch.load(model_weights_path, map_location=device))
-    model.eval()
-    model.to(device)
+class SentryCam:
+    def __init__(self, model, target_layer, save_dir):
+        self.model = model
+        self.save_dir = save_dir
+        self.embeddings = []
+        os.makedirs(self.save_dir, exist_ok=True)
+        
+        # Register a PyTorch forward hook on the target classification head.
+        # This intercepts the latent vector right before final classification.
+        self.hook = target_layer.register_forward_hook(self.hook_fn)
+        
+    def hook_fn(self, module, input, output):
+        # input[0] contains the latent embeddings (e.g., shape [Batch, 768] for RadDINO)
+        latent_vector = input[0].detach().cpu().numpy()
+        self.embeddings.append(latent_vector)
 
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+    def clear_embeddings(self):
+        self.embeddings = []
 
-    cap = cv2.VideoCapture(video_path)
-    
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
-    
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-
-    print(f"Processing video {video_path}...")
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
-
-        img_resized = cv2.resize(frame, (IMAGE_SIZE, IMAGE_SIZE))
-        rgb_img = cv2.cvtColor(img_resized, cv2.COLOR_BGR2RGB)
-        input_tensor = transform(rgb_img).unsqueeze(0).to(device)
-
+    def visualize_latent_space(self, dataloader, device, epoch):
+        self.model.eval()
+        self.clear_embeddings()
+        
+        all_labels = []
+        
+        # Process a small subset (e.g., 500 images) to keep t-SNE fast and readable
+        max_samples = 500
+        samples_collected = 0
+        
         with torch.no_grad():
-            logits = model(input_tensor)
-            probs = torch.sigmoid(logits)[0].cpu().numpy()
-
-        top_class_idx = np.argmax(probs)
-        top_prob = probs[top_class_idx]
+            for images, labels in dataloader:
+                if samples_collected >= max_samples:
+                    break
+                images = images.to(device)
+                
+                # The forward pass triggers the hook_fn automatically
+                _ = self.model(images)
+                
+                all_labels.append(labels.cpu().numpy())
+                samples_collected += images.size(0)
+                
+        # Stack all intercepted embeddings and labels
+        latent_space = np.vstack(self.embeddings)[:max_samples]
+        targets = np.vstack(all_labels)[:max_samples]
         
-        label_text = f"Class {top_class_idx} ({MODEL_NAME}): {top_prob:.2f}"
+        # Reduce the high-dimensional ViT space down to 2D for plotting
+        tsne = TSNE(n_components=2, perplexity=30, random_state=42)
+        latent_2d = tsne.fit_transform(latent_space)
         
-        cv2.putText(
-            frame, 
-            label_text, 
-            (10, 40), 
-            cv2.FONT_HERSHEY_SIMPLEX, 
-            1, 
-            (0, 255, 0), 
-            2, 
-            cv2.LINE_AA
+        plt.figure(figsize=(12, 10))
+        
+        # Isolate the dominant "No Finding" class (rows where all 14 labels are exactly 0)
+        is_healthy = np.sum(targets, axis=1) == 0
+        
+        # Plot healthy patients as the baseline background
+        plt.scatter(
+            latent_2d[is_healthy, 0], 
+            latent_2d[is_healthy, 1], 
+            c='lightgray', label='No Finding (Healthy)', alpha=0.5, edgecolors='w', s=60
         )
         
-        out.write(frame)
-
-    cap.release()
-    out.release()
-    print(f"Video saved successfully to {output_path}")
-
-if __name__ == "__main__":
-    # Example Usage:
-    # Upload a sample video to Colab before running this
-    run_sentrycam_colab("sample_xray_video.mp4", "path_to_saved_model.pth")
+        # Plot the patients with pathologies
+        plt.scatter(
+            latent_2d[~is_healthy, 0], 
+            latent_2d[~is_healthy, 1], 
+            c='crimson', label='Pathology Present', alpha=0.8, edgecolors='w', s=60
+        )
+        
+        plt.title(f'SentryCam Latent Space Evolution - Epoch {epoch}')
+        plt.xlabel('Latent Dimension 1 (t-SNE)')
+        plt.ylabel('Latent Dimension 2 (t-SNE)')
+        plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.3)
+        
+        save_path = os.path.join(self.save_dir, f'latent_epoch_{epoch}.png')
+        plt.savefig(save_path, bbox_inches='tight', dpi=300)
+        plt.close()
+        
+        print(f"SentryCam generated visualization: {save_path}")
+        
+    def close(self):
+        # Clean up and remove the hook when training is completely finished
+        self.hook.remove()

@@ -14,6 +14,9 @@ def get_model():
 
     elif MODEL_NAME == "swin":
         return SwinTransformer(NUM_CLASSES)
+
+    elif MODEL_NAME == "raddino":
+        return RadDINO(NUM_CLASSES, freeze_backbone=True)
     
     elif MODEL_NAME == "radjepa":
         return RadJEPA(NUM_CLASSES)
