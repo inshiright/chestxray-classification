@@ -12,14 +12,13 @@ from config import IMAGE_SIZE, MODEL_NAME
 # ---------------------------------------------------------
 # Reshape functions for Transformer-based architectures
 # ---------------------------------------------------------
-def reshape_transform_vit(tensor, height=24, width=24):
-    # RadJEPA/ViT models usually output a class token at index 0 followed by patch tokens.
-    # For a 384x384 image with 16x16 patches, the grid is 24x24 (384 / 16 = 24).
-    # We drop the class token [:, 1:, :] and reshape the remaining patches into a 2D grid.
-    result = tensor[:, 1:, :].reshape(tensor.size(0), height, width, tensor.size(2))
+def reshape_transform_vit(tensor):
+    # Dynamically calculate grid size based on the number of patch tokens
+    grid_size = int((tensor.size(1) - 1) ** 0.5)
+    result = tensor[:, 1:, :].reshape(tensor.size(0), grid_size, grid_size, tensor.size(2))
     
     # PyTorch Grad-CAM expects (Batch, Channels, Height, Width)
-    result = result.transpose(2, 3).transpose(1, 2)
+    result = result.permute(0, 3, 1, 2)
     return result
 
 def reshape_transform_swin(tensor, height=12, width=12):
@@ -49,9 +48,14 @@ def run_gradcam(image_path, model_weights_path):
         target_layers = [model.features[-1][-1]]
         
     elif MODEL_NAME == "radjepa":
-        target_layers = [model.blocks[-1].norm1]
+        target_layers = [model.encoder.model.blocks[-1].norm1]
         reshape_transform = reshape_transform_vit
         
+    elif MODEL_NAME == "raddino":
+        # Hugging Face native ViTModel structure for microsoft/rad-dino
+        target_layers = [model.encoder.encoder.layer[-1].layernorm_before]
+        reshape_transform = reshape_transform_vit
+
     elif MODEL_NAME == "swin":
         target_layers = [model.features[-1][-1]] 
         reshape_transform = reshape_transform_swin

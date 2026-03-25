@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from transformers import AutoModel
 
 class RadJEPA(nn.Module):
@@ -24,6 +25,10 @@ class RadJEPA(nn.Module):
                 param.requires_grad = False
 
     def forward(self, x):
+        # RadJEPA strictly expects 224x224. Interpolate if incoming batches are sized differently.
+        if x.shape[-2:] != (224, 224):
+            x = F.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
+            
         outputs = self.encoder(x)
         
         # Extract features (handling both HuggingFace BaseOutput and direct Tensor returns)
