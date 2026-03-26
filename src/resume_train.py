@@ -68,6 +68,7 @@ epoch_train_aurocs, epoch_val_aurocs = [], []
 best_val_auroc = 0.0
 patience_counter = 0
 EARLY_STOPPING_PATIENCE = 5
+MIN_DELTA = 0.05  # Minimum improvement required to reset patience
 
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 best_model_path = os.path.join(CHECKPOINT_DIR, f"{MODEL_NAME}_best_model.pth")
@@ -148,10 +149,16 @@ for epoch in range(start_epoch, EPOCHS):
 
     # Early stopping evaluates based on AUROC now
     if val_auroc > best_val_auroc:
-        best_val_auroc = val_auroc
-        patience_counter = 0
         torch.save(model.state_dict(), best_model_path)
         print(f"Validation AUROC improved. Saved best model to {best_model_path}\n")
+        
+        # Only reset patience if the improvement is significant
+        if val_auroc >= (best_val_auroc + MIN_DELTA):
+            patience_counter = 0
+        else:
+            patience_counter += 1
+            
+        best_val_auroc = val_auroc
     else:
         patience_counter += 1
         print(f"Validation AUROC did not improve. Patience: {patience_counter}/{EARLY_STOPPING_PATIENCE}\n")
