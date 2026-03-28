@@ -36,8 +36,8 @@ val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=4, pin_m
 model = get_model().to(device)
 
 # --- Initialize SentryCam ---
-sentry_save_dir = os.path.join(CHECKPOINT_DIR, "sentrycam_outputs")
-sentry = SentryCam(model=model, target_layer=model.classifier, save_dir=sentry_save_dir)
+# sentry_save_dir = os.path.join(CHECKPOINT_DIR, "sentrycam_outputs")
+# sentry = SentryCam(model=model, target_layer=model.classifier, save_dir=sentry_save_dir)
 
 criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
@@ -94,7 +94,7 @@ for epoch in range(start_epoch, EPOCHS):
     )
     
     # --- Trigger SentryCam Visualization ---
-    sentry.visualize_latent_space(val_loader, device, epoch=epoch+1)
+    # sentry.visualize_latent_space(val_loader, device, epoch=epoch+1)
     
     scheduler.step(val_auroc)
     current_lr = optimizer.param_groups[0]['lr']
@@ -143,7 +143,7 @@ for epoch in range(start_epoch, EPOCHS):
         break
 
 # --- Clean up the SentryCam hook ---
-sentry.close()
+# sentry.close()
 
 # --- Visualization Code ---
 epochs_ran = len(epoch_train_losses)

@@ -21,8 +21,8 @@ def get_model():
     elif MODEL_NAME == "radjepa":
         return RadJEPA(NUM_CLASSES)
 
-    elif MODEL_NAME == "raddino":
-        return RadDINO(NUM_CLASSES)
+    elif MODEL_NAME == "resnet50":
+        return ResNet50(NUM_CLASSES)
 
     else:
         raise ValueError("Unknown model")

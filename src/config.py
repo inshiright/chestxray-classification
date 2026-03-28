@@ -11,7 +11,7 @@ BATCH_SIZE = 128
 EPOCHS = 50
 LR = 1e-4
 
-MODEL_NAME = "raddino"
+MODEL_NAME = "resnet50"
 
 # --- Checkpoint Settings ---
 CHECKPOINT_DIR = os.path.join(ROOT_DIR, "checkpoints")
