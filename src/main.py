@@ -35,9 +35,19 @@ val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, num_workers=4, pin_m
 
 model = get_model().to(device)
 
+# Determine target classification layer for SentryCam hook
+if MODEL_NAME == "swin":
+    target_layer = model.model.head
+elif MODEL_NAME == "efficientnet":
+    target_layer = model.model.classifier
+elif MODEL_NAME == "convnext":
+    target_layer = getattr(model.model.head, "fc", model.model.head)
+else:
+    target_layer = getattr(model, "classifier", list(model.modules())[-1])
+
 # --- Initialize SentryCam ---
 sentry_save_dir = os.path.join(CHECKPOINT_DIR, "sentrycam_outputs")
-sentry = SentryCam(model=model, target_layer=model.classifier, save_dir=sentry_save_dir)
+sentry = SentryCam(model=model, target_layer=target_layer, save_dir=sentry_save_dir)
 
 criterion = torch.nn.BCEWithLogitsLoss()
 optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay=1e-4)
