@@ -49,6 +49,10 @@ class SentryCam:
         latent_space = np.vstack(self.embeddings)[:max_samples]
         targets = np.vstack(all_labels)[:max_samples]
         
+        # Flatten any extra spatial or sequence dimensions to ensure shape is (n_samples, n_features)
+        if latent_space.ndim > 2:
+            latent_space = latent_space.reshape(latent_space.shape[0], -1)
+        
         # Reduce the high-dimensional ViT space down to 2D for plotting
         tsne = TSNE(n_components=2, perplexity=30, random_state=42)
         latent_2d = tsne.fit_transform(latent_space)
