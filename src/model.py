@@ -3,6 +3,7 @@ from models.generic_cv.ConvNeXt_V2.model import ConvNeXtV2
 from models.generic_cv.Swin_Transformer.model import SwinTransformer
 from models.medical_sota.RadJEPA.model import RadJEPA
 from models.medical_sota.RadDINO.model import RadDINO
+from models.baseline.ResNet50.model import ResNet50
 from config import NUM_CLASSES, MODEL_NAME
 
 def get_model():
