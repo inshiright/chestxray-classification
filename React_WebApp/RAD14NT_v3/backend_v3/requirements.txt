@@ -9,7 +9,7 @@ flask-cors==4.0.1
 gunicorn==22.0.0
 
 # Explainability
-pytorch-grad-cam==1.5.4
+grad-cam==1.5.4
 lime==0.2.0.1
 shap==0.45.1
 scikit-learn==1.4.2
