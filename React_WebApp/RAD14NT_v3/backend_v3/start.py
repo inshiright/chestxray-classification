@@ -1,17 +1,15 @@
 """
 Entry point for Render deployment.
-Replaces the --weights / --model CLI args with environment variables:
 
-  MODEL_NAME   : efficientnet | convnext | swin | raddino | radjepa | resnet50
-                 (defaults to "efficientnet")
-  PORT         : HTTP port (Render sets this automatically)
-
-Usage (Render start command):
-  gunicorn start:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1
+Environment variables:
+  MODEL_NAME : efficientnet | convnext | swin | raddino | radjepa | resnet50
+               (defaults to "efficientnet")
+  PORT       : set automatically by Render (default 10000)
 """
 
 import os
 import sys
+import threading
 
 # ── resolve paths ─────────────────────────────────────────────────────────────
 root_path = os.path.abspath(os.path.dirname(__file__))
@@ -20,23 +18,42 @@ for p in (root_path, src_path):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-# ── read env vars ─────────────────────────────────────────────────────────────
-MODEL_NAME = os.environ.get("MODEL_NAME", "efficientnet").strip().lower()
-PORT = int(os.environ.get("PORT", 5000))
-
-# ── download weights if needed ────────────────────────────────────────────────
-from download_weights import download_weights
-weights_path = download_weights(MODEL_NAME)
-
-# ── import the Flask app and load the model ───────────────────────────────────
-# api.py exposes `app` and `load_model` at module level
+# ── import Flask app (does NOT load model yet) ────────────────────────────────
 import api
-api.load_model(weights_path, MODEL_NAME)
-
-# ── expose `app` for gunicorn ─────────────────────────────────────────────────
 app = api.app
+
+# ── health check — always responds instantly, even during model loading ───────
+_model_ready = False
+_model_error = None
+
+@app.route("/health")
+def health():
+    from flask import jsonify
+    if _model_error:
+        return jsonify({"status": "error", "detail": str(_model_error)}), 500
+    if not _model_ready:
+        return jsonify({"status": "loading"}), 200  # 200 so Render doesn't kill us
+    return jsonify({"status": "ok"}), 200
+
+# ── load model in background thread so port binds immediately ─────────────────
+def _load_model_background():
+    global _model_ready, _model_error
+    try:
+        model_name = os.environ.get("MODEL_NAME", "efficientnet").strip().lower()
+        print(f"[startup] Loading model in background: {model_name}")
+        from download_weights import download_weights
+        weights_path = download_weights(model_name)
+        api.load_model(weights_path, model_name)
+        _model_ready = True
+        print("[startup] Model ready.")
+    except Exception as e:
+        _model_error = e
+        print(f"[startup] Model load failed: {e}")
+
+threading.Thread(target=_load_model_background, daemon=True).start()
 
 # ── local dev fallback ────────────────────────────────────────────────────────
 if __name__ == "__main__":
-    print(f"\nAPI running at http://localhost:{PORT}")
-    app.run(host="0.0.0.0", port=PORT, debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    print(f"Running on http://0.0.0.0:{port}")
+    app.run(host="0.0.0.0", port=port, debug=False)
