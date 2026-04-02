@@ -66,7 +66,7 @@ def _make_transform(size):
     ])
 
 app = Flask(__name__)
-CORS(app)  # allow requests from the Vite dev server
+CORS(app, origins="*", supports_credentials=False)
 
 SAMPLES_DIR = os.path.join(root_path, "static", "samples")
 
@@ -313,6 +313,8 @@ def _infer_probs(tensor: torch.Tensor) -> np.ndarray:
 
 @app.route("/health", methods=["GET"])
 def health():
+    if MODEL is None or MODEL_NAME is None:
+        return jsonify({"status": "loading", "model": None, "device": None}), 200
     return jsonify({"status": "ok", "model": MODEL_NAME, "device": str(DEVICE)})
 
 
