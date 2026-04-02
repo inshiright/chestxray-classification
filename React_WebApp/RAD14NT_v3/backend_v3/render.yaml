@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: radiant-v3-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn start:app --bind 0.0.0.0:$PORT --timeout 120 --workers 1
+    plan: free
+
+    envVars:
+      - key: MODEL_NAME
+        value: efficientnet          # change to convnext / swin / raddino / radjepa / resnet50 if needed
+      - key: PYTHON_VERSION
+        value: "3.11.0"
