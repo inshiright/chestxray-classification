@@ -10,4 +10,4 @@ services:
       - key: MODEL_NAME
         value: efficientnet          # change to convnext / swin / raddino / radjepa / resnet50 if needed
       - key: PYTHON_VERSION
-        value: "3.11.0"
+        value: "3.11.9"
