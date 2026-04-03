@@ -26,6 +26,9 @@ def get_model():
 
     elif MODEL_NAME == "raddino":
         return RadDINO(NUM_CLASSES)
+    
+    elif MODEL_NAME == "cnn_transformer":
+        return CNNTransformerFromScratch(NUM_CLASSES)
 
     else:
         raise ValueError("Unknown model")
