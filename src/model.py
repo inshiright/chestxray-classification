@@ -5,6 +5,7 @@ from models.medical_sota.RadJEPA.model import RadJEPA
 from models.medical_sota.RadDINO.model import RadDINO
 from models.baseline.Custom_Model.model import CNNTransformerFromScratch
 
+from models.baseline.ResNet50.model import ResNet50
 from config import NUM_CLASSES, MODEL_NAME
 
 def get_model():
@@ -25,9 +26,6 @@ def get_model():
 
     elif MODEL_NAME == "raddino":
         return RadDINO(NUM_CLASSES)
-    
-    elif MODEL_NAME == "cnn_transformer":
-        return CNNTransformerFromScratch(NUM_CLASSES)
 
     else:
         raise ValueError("Unknown model")

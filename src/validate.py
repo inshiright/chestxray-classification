@@ -22,7 +22,7 @@ def validate_one_epoch(model, val_loader, criterion, device):
             running_loss += loss.item() * images.size(0)
             total_correct += calculate_accuracy(outputs, labels)
             
-            all_outputs.append(outputs.detach().cpu())
+            all_outputs.append(outputs.detach().cpu())   # ← fix: detach before appending
             all_labels.append(labels.detach().cpu())
             
     epoch_loss = running_loss / total_samples
