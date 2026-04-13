@@ -68,6 +68,8 @@ Click [here](https://huggingface.co/lyj9900/RAD14NT/tree/main/models) to downloa
 2. Run `npm i` to install all the required node modules.
 3. Only after the backend is ready, run `npm run dev`.
 4. `Ctrl + Click` the local host link that appeared to open the RAD14NT Web Application.
+5. The homepage will look like this:
+![RAD14NT Homepage](./assets/RAD14NT_homepage.png)
 
 <!------------ NEXT SECTION ------------>
 
