@@ -65,7 +65,7 @@ Click [here](https://huggingface.co/lyj9900/RAD14NT/tree/main/models) to downloa
 
 ### Step 2 — Start the frontend
 1. Navigate to `React_WebApp > Local > frontend`.
-2. Run `npm i` to install all the required node modules.
+2. Open a terminal in this location and run `npm i` to install all the required node modules.
 3. Only after the backend is ready, run `npm run dev`.
 4. `Ctrl + Click` the local host link that appeared to open the RAD14NT Web Application.
 5. The homepage will look like this:
