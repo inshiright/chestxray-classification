@@ -69,6 +69,23 @@ Click [here](https://huggingface.co/lyj9900/RAD14NT/tree/main/models) to downloa
 3. Only after the backend is ready, run `npm run dev`.
 4. `Ctrl + Click` the local host link that appeared to open the RAD14NT Web Application.
 
+<!------------ NEXT SECTION ------------>
+
+## Closing the Web Application
+
+### Step 1 — Stopping the frontend
+1. Go to the terminal where `npm run dev` was ran.
+2. Keyboard Interrupt the frontend terminal using `Ctrl + C`.
+
+### Step 2 — Stopping the backend
+1. Go to the terminal where `.\start_all.bat` was ran.
+2. Run `.\stop_all.bat`. Do **NOT** close all the 6 automatically terminals manually.
+> Note: If you want to manually close the 6 terminals, make sure to Keyboard Interrupt (Ctrl + C) every terminal first.
+
+<!------------ NEXT SECTION ------------>
+
+
+
 
 <!-- ## Google Colab Setup (Cloud)
 
