@@ -1,0 +1,26 @@
+# Core ML
+torch==2.11.0
+torchvision==0.26.0
+timm==1.0.3
+transformers==4.47.1
+
+# API server
+flask==3.1.0
+flask-cors==5.0.1
+gunicorn==23.0.0
+
+# Explainability
+grad-cam==1.5.4
+lime==0.2.0.1
+shap==0.47.2
+scikit-learn==1.6.1
+scikit-image==0.25.2
+
+# Image processing
+opencv-python-headless==4.11.0.86
+Pillow==11.2.1
+numpy==2.2.4
+matplotlib==3.10.1
+
+# Data
+pandas==2.2.3
