@@ -6,29 +6,29 @@ from models.medical_sota.RadDINO.model import RadDINO
 from models.baseline.Custom_Model.model import CNNTransformerFromScratch
 
 from models.baseline.ResNet50.model import ResNet50
-from config import NUM_CLASSES, MODEL_NAME
+import config
 
 def get_model():
-    if MODEL_NAME == "efficientnet":
-        return EfficientNet_B0(NUM_CLASSES)
+    if config.MODEL_NAME == "efficientnet":
+        return EfficientNet_B0(config.NUM_CLASSES)
 
-    elif MODEL_NAME == "convnext":
-        return ConvNeXtV2(NUM_CLASSES)
+    elif config.MODEL_NAME == "convnext":
+        return ConvNeXtV2(config.NUM_CLASSES)
 
-    elif MODEL_NAME == "swin":
-        return SwinTransformer(NUM_CLASSES)
+    elif config.MODEL_NAME == "swin":
+        return SwinTransformer(config.NUM_CLASSES)
 
-    elif MODEL_NAME == "raddino":
-        return RadDINO(NUM_CLASSES, freeze_backbone=True)
+    elif config.MODEL_NAME == "raddino":
+        return RadDINO(config.NUM_CLASSES, freeze_backbone=True)
     
-    elif MODEL_NAME == "radjepa":
-        return RadJEPA(NUM_CLASSES)
-
-    elif MODEL_NAME == "raddino":
-        return RadDINO(NUM_CLASSES)
+    elif config.MODEL_NAME == "radjepa":
+        return RadJEPA(config.NUM_CLASSES)
     
-    elif MODEL_NAME == "cnn_transformer":
-        return CNNTransformerFromScratch(NUM_CLASSES)
+    elif config.MODEL_NAME == "cnn_transformer":
+        return CNNTransformerFromScratch(config.NUM_CLASSES)
+
+    elif config.MODEL_NAME == "resnet50":
+        return ResNet50(config.NUM_CLASSES)
 
     else:
         raise ValueError("Unknown model")

@@ -2,8 +2,8 @@ import torch
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from pytorch_gradcam import GradCAM
-from pytorch_gradcam.utils.image import show_cam_on_image
+from pytorch_grad_cam import GradCAM
+from pytorch_grad_cam.utils.image import show_cam_on_image
 from torchvision import transforms
 from PIL import Image
 from model import get_model
@@ -13,20 +13,19 @@ from config import IMAGE_SIZE, MODEL_NAME
 # Reshape functions for Transformer-based architectures
 # ---------------------------------------------------------
 def reshape_transform_vit(tensor):
-    # Dynamically calculate grid size based on the number of patch tokens
-    grid_size = int((tensor.size(1) - 1) ** 0.5)
-    result = tensor[:, 1:, :].reshape(tensor.size(0), grid_size, grid_size, tensor.size(2))
+    n_tokens = tensor.size(1)
+    if int(np.sqrt(n_tokens - 1))**2 == n_tokens - 1:
+        grid_size = int(np.sqrt(n_tokens - 1))
+        result = tensor[:, 1:, :].reshape(tensor.size(0), grid_size, grid_size, tensor.size(2))
+    else:
+        grid_size = int(np.sqrt(n_tokens))
+        result = tensor.reshape(tensor.size(0), grid_size, grid_size, tensor.size(2))
     
-    # PyTorch Grad-CAM expects (Batch, Channels, Height, Width)
     result = result.permute(0, 3, 1, 2)
     return result
 
-def reshape_transform_swin(tensor, height=12, width=12):
-    # Swin Transformers output flattened features without a class token.
-    # For a 384x384 image, the final stage feature map is typically 12x12 (384 / 32 = 12).
-    result = tensor.reshape(tensor.size(0), height, width, tensor.size(2))
-    result = result.transpose(2, 3).transpose(1, 2)
-    return result
+def reshape_transform_h_w_c(tensor):
+    return tensor.permute(0, 3, 1, 2)
 
 # ---------------------------------------------------------
 # Main Execution
@@ -38,14 +37,18 @@ def run_gradcam(image_path, model_weights_path):
     model.eval()
     model.to(device)
 
+    # Unfreeze all parameters for XAI analysis (Grad-CAM requires gradients)
+    for param in model.parameters():
+        param.requires_grad = True
+
     # Dynamically assign the hook location based on the active model
     reshape_transform = None
     
     if MODEL_NAME == "efficientnet":
-        target_layers = [model.features[-1]]
+        target_layers = [model.model.conv_head]
         
     elif MODEL_NAME == "convnext":
-        target_layers = [model.features[-1][-1]]
+        target_layers = [model.model.stages[-1].blocks[-1]]
         
     elif MODEL_NAME == "radjepa":
         target_layers = [model.encoder.model.blocks[-1].norm1]
@@ -53,12 +56,15 @@ def run_gradcam(image_path, model_weights_path):
         
     elif MODEL_NAME == "raddino":
         # Hugging Face native ViTModel structure for microsoft/rad-dino
-        target_layers = [model.encoder.encoder.layer[-1].layernorm_before]
+        target_layers = [model.encoder.encoder.layer[-1].norm1]
         reshape_transform = reshape_transform_vit
 
     elif MODEL_NAME == "swin":
-        target_layers = [model.features[-1][-1]] 
-        reshape_transform = reshape_transform_swin
+        target_layers = [model.model.layers[-1].blocks[-1]] 
+        reshape_transform = reshape_transform_h_w_c
+
+    elif MODEL_NAME == "cnn_transformer":
+        target_layers = [model.conv4[-1]]
         
     else:
         raise ValueError(f"Grad-CAM configuration for {MODEL_NAME} is not set up.")
