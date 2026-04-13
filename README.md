@@ -55,7 +55,7 @@ Click [here](https://huggingface.co/lyj9900/RAD14NT/tree/main/models) to downloa
 ### Step 1 — Start the backend
 1. Navigate to `React_WebApp > Local > backend`.
 2. Open a terminal in this location and run `.\start_all.bat`.
-> Note: It will take a while for the backend to start up, especially if it's your first time running it.
+> Note: It will take a while for the backend to start up, especially if it's your first time running it after booting up your device.
 3. Wait for all 6 terminals automatically opened terminals to finish running the code. You should see the following:
 ![Backend Terminal Output](./assets/backend_terminal_output.png)
 > Sanity Check: Since there are 6 models to load, the each terminal should show one port for each loaded model (i.e. 5001, 5002, 5003, 5004, 5005, 5006). The example image shows 5001 which corresponds to ResNet50 loading successfully.  
