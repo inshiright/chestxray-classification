@@ -8,15 +8,15 @@ CSV_PATH = os.path.join(ROOT_DIR, "dataset", "Data_Entry_2017.csv")
 IMAGE_DIR = os.path.join(ROOT_DIR, "dataset")
 
 # Model settings
-MODEL_NAME = "efficientnet"
+MODEL_NAME = "swin"
 MODEL_TYPE = "generic_cv"
 NUM_CLASSES = 14
 
 # Training settings
-BATCH_SIZE = 4
-EPOCHS = 5
+BATCH_SIZE = 16
+EPOCHS = 30
 LR = 1e-4
-IMAGE_SIZE = 224
+IMAGE_SIZE = 384  # Swin Base uses 384x384; change to 224 for RadDINO/RadJEPA
 
 # Checkpoint directory
 CHECKPOINT_DIR = os.path.join(ROOT_DIR, "checkpoints")
