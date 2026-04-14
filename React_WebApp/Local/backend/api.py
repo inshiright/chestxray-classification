@@ -630,12 +630,11 @@ def explain_lime():
 @app.route("/explain/shap", methods=["POST"])
 def explain_shap():
     """
-    SHAP GradientExplainer.
-    Uses a black (zero) tensor as the baseline — same approach as the notebook.
-    Shows the top predicted class label on the plot.
+    SHAP PartitionExplainer using an inpaint_telea masker.
+    Logic ported from xai_comparison.py run_comparative_shap().
+    Explains the top predicted class for the uploaded image.
 
     Not supported for Swin Transformer (gradient issues with shifted windows).
-    RadDINO/RadJEPA run on CPU via the persistent CPU_MODEL copy to avoid GPU OOM.
     """
     try:
         if MODEL_NAME == "swin":
@@ -645,62 +644,51 @@ def explain_shap():
             }), 400
 
         import shap
-        import copy
 
         pil_img = pil_from_request()
-
         size = _model_input_size()
+        resized_img = pil_img.convert("RGB").resize((size, size))
+        img_array = np.array(resized_img)
 
-        # SHAP input size: cap at 224px to keep memory low on free servers.
-        # Attribution maps are spatially smooth — computing at 224px then
-        # upsampling to native size for display is visually equivalent.
-        SHAP_SIZE = min(size, 224)
-        shap_transform = _make_transform(SHAP_SIZE)
-        tensor_cpu = shap_transform(pil_img.convert("RGB")).unsqueeze(0)  # [1,3,S,S] on CPU
+        model_transform = _make_transform(size)
 
-        # Wrap CPU_MODEL in a thin adapter that resizes input to native size
-        # so the model never sees a wrong-resolution tensor
-        class _ResizeWrapper(torch.nn.Module):
-            def __init__(self, m, native):
-                super().__init__()
-                self.m = m
-                self.native = native
-            def forward(self, x):
-                if x.shape[-1] != self.native:
-                    x = torch.nn.functional.interpolate(
-                        x, size=(self.native, self.native),
-                        mode="bilinear", align_corners=False
-                    )
-                return self.m(x)
+        def predict_func(images):
+            batch = torch.stack(
+                [model_transform(Image.fromarray(im.astype(np.uint8))) for im in images]
+            ).to(next(MODEL.parameters()).device)
+            with torch.no_grad():
+                return torch.sigmoid(MODEL(batch)).cpu().numpy()
 
-        wrapped_cpu = _ResizeWrapper(CPU_MODEL, size)
-        wrapped_cpu.eval()
+        # Use PartitionExplainer with inpaint_telea masker -- same as xai_comparison.py
+        masker = shap.maskers.Image("inpaint_telea", (size, size, 3))
+        explainer = shap.Explainer(predict_func, masker)
 
-        background_cpu = torch.zeros(1, 3, SHAP_SIZE, SHAP_SIZE)
+        # Find the top predicted class on the original image
+        base_tensor = model_transform(resized_img).unsqueeze(0).to(
+            next(MODEL.parameters()).device
+        )
+        with torch.no_grad():
+            preds = torch.sigmoid(MODEL(base_tensor)).cpu().numpy()[0]
+        top_class = int(np.argmax(preds))
+        top_label = DISEASE_CLASSES[top_class]
 
-        # GradientExplainer on CPU — avoids GPU memory pressure
-        explainer = shap.GradientExplainer(wrapped_cpu, background_cpu)
-        shap_values, indexes = explainer.shap_values(
-            tensor_cpu, ranked_outputs=1, nsamples=20
+        # Explain the top class -- max_evals and batch_size from xai_comparison.py
+        shap_values = explainer(
+            img_array.reshape(1, size, size, 3),
+            max_evals=200,
+            batch_size=50,
+            outputs=[top_class],
         )
 
-        top_class_idx = indexes[0][0]
-        if hasattr(top_class_idx, "item"):
-            top_class_idx = top_class_idx.item()
-        top_label = DISEASE_CLASSES[top_class_idx]
-
-        shap_numpy = [np.swapaxes(np.swapaxes(s, 1, -1), 1, 2) for s in shap_values]
-        test_numpy  = np.swapaxes(np.swapaxes(tensor_cpu.numpy(), 1, -1), 1, 2)
-
-        del wrapped_cpu, background_cpu, explainer
-
-        # shap.image_plot() creates its own figure internally — do NOT pre-create
+        # shap.image_plot() creates its own figure internally -- do NOT pre-create
         # one with plt.figure() or fig_to_b64 will encode that empty figure instead.
-        shap.image_plot(shap_numpy, -test_numpy,
-                        labels=[[top_label]], show=False)
-        plt.suptitle(f"SHAP — top predicted: {top_label}", fontsize=10, y=1.01)
+        shap.image_plot(
+            shap_values,
+            pixel_values=img_array.reshape(1, size, size, 3),
+            show=False,
+        )
+        plt.suptitle(f"SHAP: {MODEL_NAME} (Class {top_label})", fontsize=10, y=0.95)
 
-        # Grab the figure shap.image_plot actually drew into
         fig = plt.gcf()
 
         return jsonify({"image": fig_to_b64(fig), "topClass": top_label})
