@@ -1,53 +1,91 @@
 @echo off
-REM start_all.bat — Launch all model API servers in the cxr conda environment.
-REM Place this file in your backend\ folder and double-click it, or run it from any terminal.
-REM Each model opens in its own window. Close all windows or run stop_all.bat to stop.
+REM start_all.bat — Launch all model API servers dynamically.
+REM Reads config from start_all.cfg if present, otherwise auto-detects conda.
+REM Scans checkpoints\ for any *_best_model.pth files and launches each one.
 
-set CONDA_ROOT=C:\Users\YJ\miniconda3
-set ENV_NAME=cxr
+setlocal EnableDelayedExpansion
 set BACKEND=%~dp0
+set CFG=%BACKEND%start_all.cfg
 
-REM Path to conda's activation hook
-set ACTIVATE=%CONDA_ROOT%\Scripts\activate.bat
-
-REM Only launch models whose .pth file exists in checkpoints\
-REM Add or remove lines below to match the files you actually have.
-
-if exist "%BACKEND%checkpoints\resnet50_best_model.pth" (
-    start "resnet50 :5001" cmd /k "call %ACTIVATE% %ENV_NAME% && cd /d %BACKEND% && python api.py --weights checkpoints\resnet50_best_model.pth --model resnet50 --port 5001"
+REM ── 1. Load or create config ─────────────────────────────────────────────────
+if exist "%CFG%" (
+    for /f "usebackq tokens=1,* delims==" %%A in ("%CFG%") do (
+        set "%%A=%%B"
+    )
+    echo [config] Loaded settings from start_all.cfg
 ) else (
-    echo [skip] resnet50 — checkpoints\resnet50_best_model.pth not found
+    echo [config] No start_all.cfg found — auto-detecting...
+
+    REM Auto-detect conda root (checks common locations)
+    for %%P in (
+        "%USERPROFILE%\miniconda3"
+        "%USERPROFILE%\anaconda3"
+        "%LOCALAPPDATA%\miniconda3"
+        "%LOCALAPPDATA%\anaconda3"
+        "C:\miniconda3"
+        "C:\anaconda3"
+        "C:\ProgramData\miniconda3"
+        "C:\ProgramData\anaconda3"
+    ) do (
+        if not defined CONDA_ROOT (
+            if exist "%%~P\Scripts\activate.bat" set "CONDA_ROOT=%%~P"
+        )
+    )
+
+    if not defined CONDA_ROOT (
+        echo [error] Could not find a conda installation.
+        echo         Set CONDA_ROOT manually in start_all.cfg
+        pause & exit /b 1
+    )
+
+    REM Default env name — override in start_all.cfg
+    set "ENV_NAME=cxr"
+
+    REM Save discovered values for next time
+    (
+        echo CONDA_ROOT=!CONDA_ROOT!
+        echo ENV_NAME=cxr
+    ) > "%CFG%"
+    echo [config] Created start_all.cfg — edit it to change settings.
 )
 
-if exist "%BACKEND%checkpoints\efficientnet_best_model.pth" (
-    start "efficientnet :5002" cmd /k "call %ACTIVATE% %ENV_NAME% && cd /d %BACKEND% && python api.py --weights checkpoints\efficientnet_best_model.pth --model efficientnet --port 5002"
-) else (
-    echo [skip] efficientnet — checkpoints\efficientnet_best_model.pth not found
+set "ACTIVATE=%CONDA_ROOT%\Scripts\activate.bat"
+
+if not exist "%ACTIVATE%" (
+    echo [error] activate.bat not found at: %ACTIVATE%
+    echo         Check CONDA_ROOT in start_all.cfg
+    pause & exit /b 1
 )
 
-if exist "%BACKEND%checkpoints\convnext_best_model.pth" (
-    start "convnext :5003" cmd /k "call %ACTIVATE% %ENV_NAME% && cd /d %BACKEND% && python api.py --weights checkpoints\convnext_best_model.pth --model convnext --port 5003"
-) else (
-    echo [skip] convnext — checkpoints\convnext_best_model.pth not found
+REM ── 2. Port assignment — first model found gets 5001, next 5002, etc. ────────
+set /a PORT=5001
+set LAUNCHED=0
+
+REM ── 3. Scan checkpoints\ for *_best_model.pth and launch each ────────────────
+if not exist "%BACKEND%checkpoints\" (
+    echo [error] No checkpoints\ folder found at: %BACKEND%checkpoints\
+    pause & exit /b 1
 )
 
-if exist "%BACKEND%checkpoints\swin_best_model.pth" (
-    start "swin :5004" cmd /k "call %ACTIVATE% %ENV_NAME% && cd /d %BACKEND% && python api.py --weights checkpoints\swin_best_model.pth --model swin --port 5004"
-) else (
-    echo [skip] swin — checkpoints\swin_best_model.pth not found
-)
+for %%F in ("%BACKEND%checkpoints\*_best_model.pth") do (
+    REM Extract model name: strip path and _best_model.pth suffix
+    set "FNAME=%%~nF"
+    set "MODEL=!FNAME:_best_model=!"
 
-if exist "%BACKEND%checkpoints\raddino_best_model.pth" (
-    start "raddino :5005" cmd /k "call %ACTIVATE% %ENV_NAME% && cd /d %BACKEND% && python api.py --weights checkpoints\raddino_best_model.pth --model raddino --port 5005"
-) else (
-    echo [skip] raddino — checkpoints\raddino_best_model.pth not found
-)
+    echo [launch] !MODEL! on port !PORT! ^(%%~nxF^)
+    start "!MODEL! :!PORT!" cmd /k "call "%ACTIVATE%" %ENV_NAME% && cd /d "%BACKEND%" && python api.py --weights checkpoints\%%~nxF --model !MODEL! --port !PORT!"
 
-if exist "%BACKEND%checkpoints\radjepa_best_model.pth" (
-    start "radjepa :5006" cmd /k "call %ACTIVATE% %ENV_NAME% && cd /d %BACKEND% && python api.py --weights checkpoints\radjepa_best_model.pth --model radjepa --port 5006"
-) else (
-    echo [skip] radjepa — checkpoints\radjepa_best_model.pth not found
+    set /a PORT+=1
+    set /a LAUNCHED+=1
 )
 
 echo.
-echo All available servers launched. Minimise the windows and leave them running.
+if %LAUNCHED%==0 (
+    echo [warn] No *_best_model.pth files found in checkpoints\
+    echo        Nothing was launched.
+) else (
+    echo %LAUNCHED% server(s) launched. Minimise the windows and leave them running.
+)
+
+endlocal
+pause

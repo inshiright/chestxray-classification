@@ -2,27 +2,19 @@
  * Chest X-Ray API client.
  *
  * Each model runs its own Flask server on a dedicated port.
- * Keep PORTS in sync with the declare -A PORTS block in backend/start_all.sh.
+ * Port assignments live in src/lib/models.js — edit there, not here.
  *
- * Set VITE_API_BASE in .env to override the hostname (default: http://localhost).
+ * Environment variables (set in frontend/.env):
+ *   VITE_API_BASE — hostname/origin for all model servers (default: http://localhost)
  */
+
+import { PORTS, getModel } from "./models";
 
 const BASE_HOST = import.meta.env.VITE_API_BASE || "http://localhost";
 
-/** Port each model's API server listens on. */
-const PORTS = {
-  resnet50:    5001,
-  efficientnet:5002,
-  convnext:    5003,
-  swin:        5004,
-  raddino:     5005,
-  radjepa:     5006,
-};
-
 /** Return the base URL for a given model id. */
 function baseUrl(modelId) {
-  const port = PORTS[modelId];
-  if (!port) throw new Error(`Unknown model id: ${modelId}`);
+  const { port } = getModel(modelId); // throws on unknown id
   return `${BASE_HOST}:${port}`;
 }
 

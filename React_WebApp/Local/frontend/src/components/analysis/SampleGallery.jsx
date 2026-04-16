@@ -1,15 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { FlaskConical, ChevronDown, ChevronUp } from "lucide-react";
-
-const PORTS = {
-  resnet50:    5001,
-  efficientnet:5002,
-  convnext:    5003,
-  swin:        5004,
-  raddino:     5005,
-  radjepa:     5006,
-};
+import { PORTS } from "@/lib/models";
 
 const SAMPLES = [
   { label: "Atelectasis",        file: "00000030_001.png" },

@@ -10,16 +10,7 @@ import ResultsPanel from "../components/analysis/ResultsPanel";
 import HeatmapViewer from "../components/analysis/HeatmapViewer";
 import SampleGallery from "../components/analysis/SampleGallery";
 import { predict, explain, fetchAllHealth } from "@/lib/api";
-
-// ── Model registry ────────────────────────────────────────────────────────────
-const MODELS = [
-  { id: "resnet50",     label: "ResNet50",        tag: "CNN", desc: "Classic torchvision baseline."            },
-  { id: "efficientnet", label: "EfficientNet B0",  tag: "CNN", desc: "Lightweight & fast. Best for quick scans."},
-  { id: "convnext",     label: "ConvNeXt V2",      tag: "CNN", desc: "Strong CNN baseline with modern design."  },
-  { id: "swin",         label: "Swin Transformer", tag: "CNN", desc: "Hierarchical vision transformer."         },
-  { id: "raddino",      label: "RadDINO",           tag: "ViT", desc: "Medical ViT pretrained on chest X-rays." },
-  { id: "radjepa",      label: "RadJEPA",           tag: "ViT", desc: "Self-supervised ViT with joint embedding."},
-];
+import { MODELS, VIT_MODEL_IDS, NO_SHAP_MODEL_IDS } from "@/lib/models";
 
 const DISEASES = [
   "Atelectasis","Cardiomegaly","Effusion","Infiltration","Mass",
@@ -211,7 +202,7 @@ export default function Analysis() {
     return () => { cancelled = true; clearInterval(id); };
   }, []);
 
-  const isVitModel = ["raddino", "radjepa"].includes(selectedModel);
+  const isVitModel = VIT_MODEL_IDS.includes(selectedModel);
 
   const handleImageSelect = useCallback((imageData) => {
     setUploadedImage(imageData);
@@ -266,8 +257,7 @@ export default function Analysis() {
     }
   }, [uploadedImage, selectedModel]);
 
-  const noShapModels = ["convnext", "swin", "raddino", "radjepa"];
-  const shapUnsupported = noShapModels.includes(selectedModel);
+  const shapUnsupported = NO_SHAP_MODEL_IDS.includes(selectedModel);
 
   const availableMethods = EXPLAIN_METHODS.filter(m => {
     if (m.vitOnly && !isVitModel) return false;
