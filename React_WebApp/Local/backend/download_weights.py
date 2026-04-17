@@ -6,7 +6,10 @@ Called automatically by start.py on startup.
 import os
 import urllib.request
 
-HF_BASE = "https://huggingface.co/lyj9900/RAD14NT/resolve/main/models"
+HF_BASE = os.environ.get(
+    "HF_REPO_URL",
+    "https://huggingface.co/lyj9900/RAD14NT/resolve/main/models",
+)
 
 MODEL_FILES = {
     "efficientnet": "efficientnet_best_model.pth",

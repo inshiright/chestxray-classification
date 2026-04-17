@@ -23,3 +23,7 @@ dataset/
 # Ignore node_modules in both local and deployed frontend directories
 React_WebApp/Local/frontend/node_modules/
 React_WebApp/RAD14NT_v3/frontend_v3/node_modules/
+
+# Ignore created .config file in both local backend directories
+React_WebApp/Local/backend/start_all.cfg
+React_WebApp/RAD14NT_v3/backend_v3/start_all.cfg
