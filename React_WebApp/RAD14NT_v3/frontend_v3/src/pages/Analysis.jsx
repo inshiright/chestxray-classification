@@ -169,7 +169,7 @@ function ModelSelector({ selectedModel, onSelect, health }) {
               <p className="text-[10px] text-muted-foreground/70 font-inter leading-relaxed">
                 Run{" "}
                 <code className="font-mono bg-muted/80 px-1 py-0.5 rounded text-foreground/80 text-[10px]">
-                  ./start_all.sh
+                  ./start_all.bat
                 </code>{" "}
                 in{" "}
                 <code className="font-mono bg-muted/80 px-1 py-0.5 rounded text-foreground/80 text-[10px]">
